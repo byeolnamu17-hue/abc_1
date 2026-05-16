@@ -5,17 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🏫 스마트 교실 자리배치 시스템</title>
     <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
 </head>
 <body>
     <div class="control-bar">
-        <button id="btn-toggle-config" class="toggle-btn" title="설정창 보이기/숨기기">⚙️</button>
+        <button id="btn-toggle-config" class="toggle-btn" title="설정">⚙️</button>
     </div>
 
     <div class="container">
         <h1>🏫 스마트 교실 자리배치 시스템</h1>
         <p class="subtitle">조건을 입력하면 최적의 자리를 계산하여 배치합니다.</p>
         
-        <div class="main-content">
+        <div id="main-content" class="main-content">
             <div id="config-panel" class="config-panel">
                 <div class="input-group row-col">
                     <div>
@@ -42,17 +43,22 @@
                     <label for="avoid-pairs">멀리 떨어뜨릴 학생 조합 (하이픈 연결, 쉼표 구분)</label>
                     <input type="text" id="avoid-pairs" placeholder="예: 정지현-송혜나, 이병헌-장승빈"></input>
                 </div>
-
-                <button id="btn-generate" class="primary-btn">🎲 자리 배치하기</button>
             </div>
 
             <div class="display-panel">
+                <div class="student-controls">
+                    <div class="shuffle-input-wrapper">
+                        <label for="shuffle-count">🎲 랜덤 셔플 횟수</label>
+                        <input type="number" id="shuffle-count" value="7" min="1" max="30">
+                    </div>
+                    <button id="btn-generate" class="primary-btn student-btn">🎲 랜덤 자리 배치 시작</button>
+                </div>
+
                 <div class="blackboard">👨‍🏫 교 탁 (앞)</div>
                 <div id="classroom-grid" class="grid-container">
                     </div>
             </div>
         </div>
     </div>
-    <script src="script.js"></script>
 </body>
 </html>
