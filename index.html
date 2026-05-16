@@ -3,40 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏫 두근두근 교실 자리배치</title>
+    <title>🏫 스마트 교실 자리배치 시스템</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <h1>🏫 스마트 교실 자리배치 시스템</h1>
-        <p class="subtitle">조건을 입력하면 AI(?)가 최적의 자리를 찾아줍니다.</p>
+        <p class="subtitle">조건을 입력하면 최적의 자리를 계산하여 배치합니다.</p>
         
         <div class="main-content">
             <div class="config-panel">
                 <div class="input-group row-col">
                     <div>
                         <label for="rows">세로 (행 수)</label>
-                        <input type="number" id="rows" value="5" min="1">
+                        <input type="number" id="rows" value="6" min="1">
                     </div>
                     <div>
                         <label for="cols">가로 (열 수)</label>
-                        <input type="number" id="cols" value="6" min="1">
+                        <input type="number" id="cols" value="5" min="1">
                     </div>
                 </div>
 
                 <div class="input-group">
-                    <label for="student-list">전체 학생 명단 (쉼표나 공백으로 구분)</label>
-                    <textarea id="student-list" placeholder="예: 김철수, 이영희, 박민수, 최하나..."></textarea>
+                    <label for="student-list">전체 학생 명단 (쉼표, 공백, 줄바꿈 구분)</label>
+                    <textarea id="student-list" placeholder="예: 강정진, 강지욱, 권도윤, 김가빈..."></textarea>
                 </div>
 
                 <div class="input-group">
                     <label for="front-students">앞자리 필수 배치 학생</label>
-                    <input type="text" id="front-students" placeholder="예: 김철수, 이영희 (첫 줄에 우선 배치)">
+                    <input type="text" id="front-students" placeholder="예: 한예진, 김가빈 (첫 줄에 배치)">
                 </div>
 
                 <div class="input-group">
-                    <label for="avoid-pairs">멀리 떨어뜨릴 커플/앙숙 (하이픈 연결, 쉼표 구분)</label>
-                    <input type="text" id="avoid-pairs" placeholder="예: 박민수-최하나, 홍길동-임꺽정">
+                    <label for="avoid-pairs">멀리 떨어뜨릴 학생 조합 (하이픈 연결, 쉼표 구분)</label>
+                    <input type="text" id="avoid-pairs" placeholder="예: 정지현-송혜나, 이병헌-장승빈">
                 </div>
 
                 <button id="btn-generate" class="primary-btn">🎲 자리 배치하기</button>
