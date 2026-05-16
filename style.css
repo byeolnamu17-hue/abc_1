@@ -4,7 +4,6 @@
     --panel-bg: #ffffff;
     --text-color: #333333;
     --border-color: #dddddd;
-    --accent-color: #e74c3c;
     --front-color: #2ecc71;
 }
 
@@ -90,7 +89,7 @@ input[type="text"], input[type="number"], textarea {
 }
 
 textarea {
-    height: 100px;
+    height: 120px;
     resize: none;
 }
 
@@ -111,7 +110,6 @@ textarea {
     background-color: #357abd;
 }
 
-/* 교실 시각화 요소 */
 .blackboard {
     width: 60%;
     background-color: #2c3e50;
@@ -140,7 +138,7 @@ textarea {
     justify-content: center;
     font-weight: bold;
     font-size: 14px;
-    transition: all 0.3s;
+    box-sizing: border-box;
 }
 
 .desk-slot.occupied {
@@ -150,6 +148,7 @@ textarea {
 }
 
 .desk-slot.front-fixed {
-    border-color: var(--front-color);
+    border: 2px solid var(--front-color);
     background-color: #e8f8f5;
+    color: #16a085;
 }
