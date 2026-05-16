@@ -8,11 +8,15 @@
 </head>
 <body>
     <div class="container">
+        <div class="control-bar">
+            <button id="btn-toggle-config" class="toggle-btn">👁️ 설정창 숨기기</button>
+        </div>
+
         <h1>🏫 스마트 교실 자리배치 시스템</h1>
         <p class="subtitle">조건을 입력하면 최적의 자리를 계산하여 배치합니다.</p>
         
-        <div class="main-content">
-            <div class="config-panel">
+        <div id="main-content" class="main-content">
+            <div id="config-panel" class="config-panel">
                 <div class="input-group row-col">
                     <div>
                         <label for="rows">세로 (행 수)</label>
@@ -31,7 +35,7 @@
 
                 <div class="input-group">
                     <label for="front-students">앞자리 필수 배치 학생</label>
-                    <input type="text" id="front-students" placeholder="예: 한예진, 김가빈 (첫 줄에 배치)">
+                    <input type="text" id="front-students" placeholder="예: 김가빈, 한예진 (첫 줄에 우선 배치)">
                 </div>
 
                 <div class="input-group">
@@ -42,7 +46,7 @@
                 <button id="btn-generate" class="primary-btn">🎲 자리 배치하기</button>
             </div>
 
-            <div class="display-panel">
+            <div id="display-panel" class="display-panel">
                 <div class="blackboard">👨‍🏫 교 탁 (앞)</div>
                 <div id="classroom-grid" class="grid-container">
                     </div>
