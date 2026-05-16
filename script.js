@@ -1,14 +1,53 @@
-// 1. 토글 버튼 이벤트 리스너 등록 (가장 확실한 방법으로 돔 제어)
-const btnToggleConfig = document.getElementById('btn-toggle-config');
-const configPanel = document.getElementById('config-panel');
+document.addEventListener('DOMContentLoaded', () => {
+    const btnToggleConfig = document.getElementById('btn-toggle-config');
+    const configPanel = document.getElementById('config-panel');
 
-btnToggleConfig.addEventListener('click', () => {
-    configPanel.classList.toggle('hidden');
+    if (btnToggleConfig && configPanel) {
+        btnToggleConfig.addEventListener('click', () => {
+            configPanel.classList.toggle('hidden');
+        });
+    }
+
+    // [변경] 배치하기 클릭 시 바로 실행되지 않고 슬롯머신 애니메이션 함수 호출
+    document.getElementById('btn-generate').addEventListener('click', startShuffleAnimation);
 });
 
-document.getElementById('btn-generate').addEventListener('click', generateSeating);
+// [변경] 학생들이 완전히 속아 넘어갈 수밖에 없는 역동적 셔플 애니메이션 로직
+function startShuffleAnimation() {
+    const studentListStr = document.getElementById('student-list').value.trim();
+    if (studentListStr === "") {
+        alert("학생 명단을 입력해주세요!");
+        return;
+    }
 
-function generateSeating() {
+    const btnGenerate = document.getElementById('btn-generate');
+    const shuffleInput = document.getElementById('shuffle-count');
+    
+    let totalShuffles = parseInt(shuffleInput.value) || 5;
+    if (totalShuffles < 1) totalShuffles = 1;
+    if (totalShuffles > 30) totalShuffles = 30; // 과부하 방지 최대 30회 제한
+
+    btnGenerate.disabled = true; // 셔플 중 버튼 비활성화
+    let currentShuffle = 0;
+
+    // 타이머 인터벌을 돌려 다다다닥 바뀌는 효과 연출 (각 셔플당 0.12초 딜레이)
+    const shuffleInterval = setInterval(() => {
+        currentShuffle++;
+        
+        // 마지막 셔플 회차일 때 true를 던져서 최종 경고문 팝업을 허용
+        const isFinal = (currentShuffle === totalShuffles);
+        
+        generateSeating(isFinal);
+
+        if (currentShuffle >= totalShuffles) {
+            clearInterval(shuffleInterval);
+            btnGenerate.disabled = false; // 완료 후 버튼 원복
+        }
+    }, 120);
+}
+
+// 기존 로직 유지하되 애니메이션 중간 과정에서 불필요한 Alert창이 뜨지 않도록 파라미터(isFinal) 적용
+function generateSeating(isFinal = true) {
     const rows = parseInt(document.getElementById('rows').value);
     const cols = parseInt(document.getElementById('cols').value);
     
@@ -23,7 +62,6 @@ function generateSeating() {
     let allStudents = parseNames(studentListStr);
     let frontStudents = parseNames(frontStr);
     
-    // 안전 장치: 앞자리 명단에는 적었으나 전체 명단에 빠뜨린 학생 구제
     frontStudents.forEach(student => {
         if (!allStudents.includes(student)) {
             allStudents.push(student);
@@ -38,75 +76,76 @@ function generateSeating() {
     const studentCount = allStudents.length;
     const emptySeatCount = totalSeats - studentCount;
 
-    if (studentCount === 0) {
-        alert("학생 명단을 입력해주세요!");
-        return;
-    }
     if (emptySeatCount < 0) {
-        alert(`좌석이 부족합니다. (학생: ${studentCount}명 / 좌석: ${totalSeats}개)`);
+        if (isFinal) alert(`좌석이 부족합니다. (학생: ${studentCount}명 / 좌석: ${totalSeats}개)`);
         return;
     }
 
-    // [핵심 변경] 빈자리의 위치를 수학적으로 고정 (0부터 전체학생수-1 까지만 학생이 앉을 수 있음)
-    // 예: 30개 좌석 중 학생이 29명이면 0~28번 인덱스만 사용하고 29번(맨 오른쪽 아래)은 무조건 빈자리 락(Lock)
+    // 오른쪽 열의 맨 아래 행부터 위로 올라오는 격리 빈자리 인덱스 연산
+    let emptyIndices = [];
+    let count = 0;
+    for (let c = cols - 1; c >= 0; c--) {
+        for (let r = rows - 1; r >= 0; r--) {
+            if (count < emptySeatCount) {
+                emptyIndices.push(r * cols + c);
+                count++;
+            }
+        }
+    }
+
     let regularStudents = allStudents.filter(name => !frontStudents.includes(name));
     let grid = new Array(totalSeats).fill(null);
     let success = false;
 
-    // 조건 부합을 위한 5,000번의 고속 셔플 시뮬레이션
     for (let attempt = 0; attempt < 5000; attempt++) {
         grid.fill(null);
 
-        // 뒷자리부터 부족한 만큼 빈자리 인덱스로 락 걸기
-        for (let i = 0; i < emptySeatCount; i++) {
-            grid[totalSeats - 1 - i] = { name: "", isFront: false, isEmpty: true };
-        }
+        emptyIndices.forEach(idx => {
+            grid[idx] = { name: "", isFront: false, isEmpty: true };
+        });
 
-        // 첫 줄(인덱스 0 ~ cols-1) 중에서 빈자리 락이 안 걸린 순수한 앞자리 탐색
         let allowedFrontIndices = [];
-        for (let i = 0; i < cols; i++) {
-            if (i < studentCount) { 
-                allowedFrontIndices.push(i);
+        for (let c = 0; c < cols; c++) {
+            let idx = 0 * cols + c;
+            if (!emptyIndices.includes(idx)) {
+                allowedFrontIndices.push(idx);
             }
         }
 
         if (frontStudents.length > allowedFrontIndices.length) {
-            alert(`첫 줄에 배치할 수 있는 자리가 부족합니다.`);
+            if (isFinal) alert(`오른쪽 지정 빈자리를 제외하면 첫 줄 자리가 부족합니다.`);
             return;
         }
 
-        // 앞자리 필수 학생 배치
         let tempFrontSeats = [...allowedFrontIndices];
         shuffleArray(tempFrontSeats);
         frontStudents.forEach((student, index) => {
             grid[tempFrontSeats[index]] = { name: student, isFront: true, isEmpty: false };
         });
 
-        // 학생들이 앉을 수 있는 구역 중 아직 비어있는 인덱스들 확보
         let remainingActiveSeats = [];
-        for (let i = 0; i < studentCount; i++) {
+        for (let i = 0; i < totalSeats; i++) {
             if (grid[i] === null) {
                 remainingActiveSeats.push(i);
             }
         }
         shuffleArray(remainingActiveSeats);
 
-        // 일반 학생 배치
         let tempRegulars = [...regularStudents];
         shuffleArray(tempRegulars);
         tempRegulars.forEach((student, index) => {
             grid[remainingActiveSeats[index]] = { name: student, isFront: false, isEmpty: false };
         });
 
-        // 8방향 철저 검증 (걸리는 조합 없으면 매칭 종료)
         if (!checkAvoidPairsViolation(grid, rows, cols, avoidPairs)) {
             success = true;
             break;
         }
     }
 
-    if (!success && avoidPairs.length > 0) {
-        alert("⚠️ 현재 조건으로는 모든 기피 대상을 떨어뜨릴 수 없어 가장 근접한 랜덤 배치를 보여줍니다. 다시 한번 버튼을 눌러보세요!");
+    // 최종 셔플 완료 시점에만 조건 실패 안내 출력
+    if (!success && avoidPairs.length > 0 && isFinal) {
+        alert("⚠️ 기피 조건이 너무 까다로워 완벽히 분리하지 못했습니다. 다시 셔플 버튼을 눌러보세요!");
     }
 
     renderGrid(grid, rows, cols);
