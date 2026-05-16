@@ -1,21 +1,12 @@
-// UI 제어 및 이벤트 리스너 등록
-document.getElementById('btn-generate').addEventListener('click', generateSeating);
-
+// 1. 토글 버튼 이벤트 리스너 등록 (가장 확실한 방법으로 돔 제어)
 const btnToggleConfig = document.getElementById('btn-toggle-config');
 const configPanel = document.getElementById('config-panel');
-const mainContent = document.getElementById('main-content');
 
 btnToggleConfig.addEventListener('click', () => {
-    if (configPanel.classList.contains('hidden')) {
-        configPanel.classList.remove('hidden');
-        mainContent.classList.remove('centered');
-        btnToggleConfig.textContent = '👁️ 설정창 숨기기';
-    } else {
-        configPanel.classList.add('hidden');
-        mainContent.classList.add('centered');
-        btnToggleConfig.textContent = '👁️ 설정창 보이기';
-    }
+    configPanel.classList.toggle('hidden');
 });
+
+document.getElementById('btn-generate').addEventListener('click', generateSeating);
 
 function generateSeating() {
     const rows = parseInt(document.getElementById('rows').value);
@@ -32,7 +23,7 @@ function generateSeating() {
     let allStudents = parseNames(studentListStr);
     let frontStudents = parseNames(frontStr);
     
-    // 앞자리 지정 학생이 전체 명단에 누락되었다면 포함시킴
+    // 안전 장치: 앞자리 명단에는 적었으나 전체 명단에 빠뜨린 학생 구제
     frontStudents.forEach(student => {
         if (!allStudents.includes(student)) {
             allStudents.push(student);
@@ -44,80 +35,70 @@ function generateSeating() {
     }).filter(pair => pair.length === 2 && pair[0] !== "" && pair[1] !== "");
 
     const totalSeats = rows * cols;
-    const emptySeatCount = totalSeats - allStudents.length;
+    const studentCount = allStudents.length;
+    const emptySeatCount = totalSeats - studentCount;
 
-    if (allStudents.length === 0) {
+    if (studentCount === 0) {
         alert("학생 명단을 입력해주세요!");
         return;
     }
     if (emptySeatCount < 0) {
-        alert(`좌석이 부족합니다. (학생: ${allStudents.length}명 / 좌석: ${totalSeats}개)`);
+        alert(`좌석이 부족합니다. (학생: ${studentCount}명 / 좌석: ${totalSeats}개)`);
         return;
     }
 
-    // 1. 빈자리를 [가장 오른쪽 열]의 [맨 뒷행]부터 순차적으로 고정 지정
-    let emptyIndices = [];
-    let foundBoxes = 0;
-    for (let c = cols - 1; c >= 0; c--) {
-        for (let r = rows - 1; r >= 0; r--) {
-            if (foundBoxes < emptySeatCount) {
-                emptyIndices.push(r * cols + c);
-                foundBoxes++;
-            }
-        }
-    }
-
-    // 2. 첫 번째 줄(row = 0) 중에서 빈자리로 잠기지 않은 유효한 앞자리 좌석 찾기
-    let availableFrontIndices = [];
-    for (let c = 0; c < cols; c++) {
-        let firstRowIdx = 0 * cols + c;
-        if (!emptyIndices.includes(firstRowIdx)) {
-            availableFrontIndices.push(firstRowIdx);
-        }
-    }
-
-    if (frontStudents.length > availableFrontIndices.length) {
-        alert(`오른쪽 빈자리를 제외하면 첫 줄 유효 좌석은 ${availableFrontIndices.length}개입니다.\n앞자리 지정 학생(${frontStudents.length}명)이 더 많습니다.`);
-        return;
-    }
-
+    // [핵심 변경] 빈자리의 위치를 수학적으로 고정 (0부터 전체학생수-1 까지만 학생이 앉을 수 있음)
+    // 예: 30개 좌석 중 학생이 29명이면 0~28번 인덱스만 사용하고 29번(맨 오른쪽 아래)은 무조건 빈자리 락(Lock)
     let regularStudents = allStudents.filter(name => !frontStudents.includes(name));
     let grid = new Array(totalSeats).fill(null);
     let success = false;
 
-    // 조건 만족을 위한 시뮬레이션 루프 (최대 5,000회)
+    // 조건 부합을 위한 5,000번의 고속 셔플 시뮬레이션
     for (let attempt = 0; attempt < 5000; attempt++) {
         grid.fill(null);
 
-        // 빈자리 먼저 배치 구조에 락(Lock) 걸기
-        emptyIndices.forEach(idx => {
-            grid[idx] = { name: "(빈자리)", isFront: false, isEmpty: true };
-        });
+        // 뒷자리부터 부족한 만큼 빈자리 인덱스로 락 걸기
+        for (let i = 0; i < emptySeatCount; i++) {
+            grid[totalSeats - 1 - i] = { name: "", isFront: false, isEmpty: true };
+        }
 
-        // 앞자리 고정 학생 배치
-        let tempFrontSeats = [...availableFrontIndices];
+        // 첫 줄(인덱스 0 ~ cols-1) 중에서 빈자리 락이 안 걸린 순수한 앞자리 탐색
+        let allowedFrontIndices = [];
+        for (let i = 0; i < cols; i++) {
+            if (i < studentCount) { 
+                allowedFrontIndices.push(i);
+            }
+        }
+
+        if (frontStudents.length > allowedFrontIndices.length) {
+            alert(`첫 줄에 배치할 수 있는 자리가 부족합니다.`);
+            return;
+        }
+
+        // 앞자리 필수 학생 배치
+        let tempFrontSeats = [...allowedFrontIndices];
         shuffleArray(tempFrontSeats);
         frontStudents.forEach((student, index) => {
             grid[tempFrontSeats[index]] = { name: student, isFront: true, isEmpty: false };
         });
 
-        // 남은 일반 좌석 인덱스 추출
+        // 학생들이 앉을 수 있는 구역 중 아직 비어있는 인덱스들 확보
         let remainingActiveSeats = [];
-        for (let i = 0; i < totalSeats; i++) {
+        for (let i = 0; i < studentCount; i++) {
             if (grid[i] === null) {
                 remainingActiveSeats.push(i);
             }
         }
         shuffleArray(remainingActiveSeats);
 
-        // 일반 학생 무작위 배치
+        // 일반 학생 배치
         let tempRegulars = [...regularStudents];
         shuffleArray(tempRegulars);
         tempRegulars.forEach((student, index) => {
             grid[remainingActiveSeats[index]] = { name: student, isFront: false, isEmpty: false };
         });
 
-        // 8방향 기피 조합 검사
+        // 8방향 철저 검증 (걸리는 조합 없으면 매칭 종료)
         if (!checkAvoidPairsViolation(grid, rows, cols, avoidPairs)) {
             success = true;
             break;
@@ -125,7 +106,7 @@ function generateSeating() {
     }
 
     if (!success && avoidPairs.length > 0) {
-        alert("⚠️ 모든 기피 조합을 만족하는 자리를 찾지 못했습니다. 다시 한번 배치하기 버튼을 눌러보세요!");
+        alert("⚠️ 현재 조건으로는 모든 기피 대상을 떨어뜨릴 수 없어 가장 근접한 랜덤 배치를 보여줍니다. 다시 한번 버튼을 눌러보세요!");
     }
 
     renderGrid(grid, rows, cols);
@@ -188,13 +169,13 @@ function renderGrid(grid, rows, cols) {
 
         if (cell) {
             if (cell.isEmpty) {
-                slot.textContent = "";
-                slot.classList.add('empty-fixed'); // 우측 끝 빈자리는 투명하게
+                slot.textContent = "(빈자리)";
+                slot.classList.add('empty-fixed'); 
             } else {
                 slot.textContent = cell.name;
                 slot.classList.add('occupied');
                 if (cell.isFront) {
-                    slot.classList.add('front-fixed'); // 교사용 화면 확인용 녹색 테두리
+                    slot.classList.add('front-fixed'); 
                 }
             }
         }
